@@ -75,9 +75,12 @@ def __generate_tgenrc_perfclient(server_peers, path):
     G.add_node("pause", time="1 minute")
 
     # torperf uses 300, 1800, and 3600 second timeouts, but we reduce them for shadow
-    G.add_node("stream_50k", sendsize="1000 bytes", recvsize="50 KiB", stallout="0 seconds", timeout="15 seconds")
+    #G.add_node("stream_50k", sendsize="1000 bytes", recvsize="50 KiB", stallout="0 seconds", timeout="15 seconds")
     G.add_node("stream_1m", sendsize="1000 bytes", recvsize="1 MiB", stallout="0 seconds", timeout="60 seconds")
     G.add_node("stream_5m", sendsize="1000 bytes", recvsize="5 MiB", stallout="0 seconds", timeout="120 seconds")
+    G.add_node("stream_10m", sendsize="1000 bytes", recvsize="10 MiB", stallout="0 seconds", timeout="240 seconds")
+    G.add_node("stream_50m", sendsize="1000 bytes", recvsize="50 MiB", stallout="0 seconds", timeout="300 seconds")
+    G.add_node("stream_100m", sendsize="1000 bytes", recvsize="100 MiB", stallout="0 seconds", timeout="500 seconds")
 
     G.add_edge("start", "pause")
 
@@ -86,9 +89,14 @@ def __generate_tgenrc_perfclient(server_peers, path):
     G.add_edge("pause", "pause")
 
     # these are chosen with weighted probability, change edge 'weight' attributes to adjust probability
-    G.add_edge("pause", "stream_50k", weight="12.0")
-    G.add_edge("pause", "stream_1m", weight="2.0")
-    G.add_edge("pause", "stream_5m", weight="1.0")
+    # G.add_edge("pause", "stream_50k", weight="12.0")
+    # G.add_edge("pause", "stream_1m", weight="2.0")
+    # G.add_edge("pause", "stream_5m", weight="1.0")
+    G.add_edge("pause", "stream_1m", weight="12.0")
+    G.add_edge("pause", "stream_5m", weight="10.0")
+    G.add_edge("pause", "stream_10m", weight="5.0")
+    G.add_edge("pause", "stream_50m", weight="2.0")
+    G.add_edge("pause", "stream_100m", weight="1.0")
 
     write_graphml(G, path)
 

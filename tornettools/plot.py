@@ -213,7 +213,7 @@ def __plot_circuit_build_time(args, circuittype, torperf_dbs, tornet_dbs):
     dbs_to_plot = torperf_dbs + tornet_dbs
 
     __plot_cdf_figure(args, dbs_to_plot, f'circuit_build_time.{circuittype}',
-                      yscale="taillog",
+                      yscale="linear",
                       xlabel=f"{circuittype} Circuit Build Time (s)")
 
 def __plot_round_trip_time(args, circuittype, torperf_dbs, tornet_dbs):
@@ -230,7 +230,7 @@ def __plot_round_trip_time(args, circuittype, torperf_dbs, tornet_dbs):
     dbs_to_plot = torperf_dbs + tornet_dbs
 
     __plot_cdf_figure(args, dbs_to_plot, f'round_trip_time.{circuittype}',
-                      yscale="taillog",
+                      yscale="linear",
                       xlabel=f"{circuittype} Circuit Round Trip Time (s)")
 
 def __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, bytes_key):
@@ -247,7 +247,7 @@ def __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, bytes_key):
     dbs_to_plot = torperf_dbs + tornet_dbs
 
     __plot_cdf_figure(args, dbs_to_plot, f"transfer_time_{bytes_key}.{circuittype}",
-                      yscale="taillog",
+                      yscale="linear",
                       xlabel=f"{circuittype} Transfer Time (s): Bytes={bytes_key}")
 
 def __plot_transfer_error_rates(args, circuittype, torperf_dbs, tornet_dbs, error_key):
@@ -289,7 +289,7 @@ def __plot_client_goodput(args, circuittype, torperf_dbs, tornet_dbs):
     dbs_to_plot = torperf_dbs + tornet_dbs
 
     __plot_cdf_figure(args, dbs_to_plot, f'client_goodput.{circuittype}',
-                      yscale="taillog",
+                      yscale="linear",
                       xlabel=f"{circuittype} Client Transfer Goodput (Mbit/s): 0.5 to 1 MiB")
 
 def __plot_client_goodput_5MiB(args, circuittype, torperf_dbs, tornet_dbs):
@@ -312,7 +312,7 @@ def __plot_client_goodput_5MiB(args, circuittype, torperf_dbs, tornet_dbs):
     dbs_to_plot = torperf_dbs + tornet_dbs
 
     __plot_cdf_figure(args, dbs_to_plot, f'client_goodput_5MiB.{circuittype}',
-                      yscale="taillog",
+                      yscale="linear",
                       xlabel=f"{circuittype} Client Transfer Goodput (Mbit/s): 4 to 5 MiB")
 
 def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None, ylabel="CDF"):

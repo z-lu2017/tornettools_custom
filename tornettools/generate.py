@@ -25,6 +25,7 @@ from tornettools.generate_defaults import (BOOTSTRAP_LENGTH_SECONDS, BW_1GBIT_KB
                                            TORRC_RELAY_OTHER_FILENAME, TOR_CONTROL_PORT,
                                            TOR_ONIONSERVICE_DIR, get_host_rel_conf_path)
 from tornettools.generate_tor import generate_tor_config, generate_tor_keys, get_relays
+import pickle
 
 def run(args):
     if args.torexe is None:
@@ -238,6 +239,98 @@ def __filter_nodes(network, ip_address_hint, country_code_hint):
 
     return candidate_nodes
 
+def setup():
+    file =  open('/home/ubuntu/TOR-RPKI/sim_roa_rov_L2/ASNwROV.pickle', 'rb') #open a file where a list of ASN with ROV is kept 
+    ROVset = list(pickle.load(file))
+    file.close()
+
+    f2 = open('/home/ubuntu/TOR-RPKI/relay_asns.pickle', 'rb')
+    ipv4_asns = pickle.load(f2)
+    f2.close()
+
+    f3 = open("/home/ubuntu/TOR-RPKI/v4.pickle", 'rb')
+    v4 = pickle.load(f3)
+    f3.close()
+
+    return v4, ipv4_asns, ROVset
+
+
+
+def __filter_nodes_ROA_ROV(network, ip_address_hint, country_code_hint, status):
+    # networkx stores the node 'id' separately, so take the node id from the tuple and combine it
+    # with the other node properties
+    all_nodes = [{'id': node_id, **node} for (node_id, node) in network.nodes(data=True)]
+
+    if ip_address_hint is not None and not ip_address_hint.is_global:
+        # ignore the hint if the IP address is not global
+        logging.debug(f"Ignoring non-global address {ip_address_hint}")
+        ip_address_hint = None
+
+    if country_code_hint is not None:
+        # normalize the country code
+        country_code_hint = country_code_hint.casefold()
+
+   
+    # get all nodes with the same country code
+    candidate_nodes = [node for node in all_nodes if 'country_code' in node and node['country_code'].casefold() == country_code_hint]
+
+    # if no node had the same country code, use all nodes
+    if len(candidate_nodes) == 0:
+        candidate_nodes = [node for node in all_nodes]
+
+    # setup target roa and rov status
+    if status == "both":
+        t_roa = 1
+        t_rov = 1
+    if status == "roa":
+        t_roa = 1
+        t_rov = 0
+    if status == "rov":
+        t_roa = 0
+        t_rov = 1
+    if status == "neither":
+        t_roa = 0
+        t_rov = 0
+
+    candidate_nodes_updated = []
+
+    v4coverage, ipv4_asns, rovset = setup()
+
+    # filter all IP addresses so that only the corresponding ROA/ROV status IPs are left
+    for c in candidate_nodes:
+        ip = c['ip_address']
+        try:
+            asn = ipv4_asns[ip][1]
+            ipv4_roa = v4coverage[ip]
+
+            if ipv4_roa != None:
+                roa = 1
+            else:
+                roa = 0
+
+            rov = 0
+            for i in range(len(rovset)):
+                rovset[i] = str(rovset[i])
+                if int(asn) == int(rovset[i].strip()):
+                    rov = 1
+        except:
+            rov = 0
+            roa = 0
+
+        if roa == t_roa and rov == t_rov:
+            candidate_nodes_updated.append(c)
+      
+    print("santiy check what is len of candidate nodes updated = ", len(candidate_nodes_updated))
+    print("original len of candidate notes = ", len(candidate_nodes))
+    if len(candidate_nodes_updated) == 0:
+        candidate_nodes_updated = candidate_nodes
+        print("what is country code - ", country_code_hint)
+        print("what is status = ", status)
+
+    return candidate_nodes_updated
+
+
+
 def __server(args, network, server):
     # Make sure we have enough bandwidth for the expected number of clients
     scaled_bw_kbit = __get_scaled_tgen_server_bandwidth_kbit(args)
@@ -335,7 +428,49 @@ def __tgen_client(args, network, name, country, tgenrc_fname):
 
     # filter the network graph nodes by their country, and choose one node
     country_code_hint = country
-    chosen_node = random.choice(__filter_nodes(network, None, country_code_hint))
+    # This is where we need to add in ROA/ROV distribution before choosing random node
+    # load in prefixes from simulation from 2024-05-01
+    file = open("/home/ubuntu/TOR-RPKI/sim_roa_rov_L2/both-prefixes.pickle", 'rb')
+    both_prefixes = pickle.load(file)
+
+    file = open("/home/ubuntu/TOR-RPKI/sim_roa_rov_L2/roa-prefixes.pickle", 'rb')
+    roa_prefixes = pickle.load(file)
+
+    file = open("/home/ubuntu/TOR-RPKI/sim_roa_rov_L2/rov-prefixes.pickle", 'rb')
+    rov_prefixes = pickle.load(file)
+
+    file = open("/home/ubuntu/TOR-RPKI/sim_roa_rov_L2/neither-prefixes.pickle", 'rb')
+    neither_prefixes = pickle.load(file)
+
+    file = open("/home/ubuntu/TOR-RPKI/sim_roa_rov_L2/both-prefixes-count.pickle", 'rb')
+    both_prefixes_count = pickle.load(file)
+
+    file = open("/home/ubuntu/TOR-RPKI/sim_roa_rov_L2/roa-prefixes-count.pickle", 'rb')
+    roa_prefixes_count = pickle.load(file)
+
+    file = open("/home/ubuntu/TOR-RPKI/sim_roa_rov_L2/rov-prefixes-count.pickle", 'rb')
+    rov_prefixes_count = pickle.load(file)
+
+    file = open("/home/ubuntu/TOR-RPKI/sim_roa_rov_L2/neither-prefixes-count.pickle", 'rb')
+    neither_prefixes_count = pickle.load(file)
+
+    if country_code_hint not in list(both_prefixes):
+        c = 'other'
+    else:
+        c = country_code_hint
+
+    dist = ["both", "roa", "rov", "neither"]
+    roa_rov_weights = []
+    roa_rov_weights.append(both_prefixes_count[c]/(both_prefixes_count[c] + roa_prefixes_count[c] + rov_prefixes_count[c] + neither_prefixes_count[c]))
+    roa_rov_weights.append(roa_prefixes_count[c]/(both_prefixes_count[c] + roa_prefixes_count[c] + rov_prefixes_count[c] + neither_prefixes_count[c]))
+    roa_rov_weights.append(rov_prefixes_count[c]/(both_prefixes_count[c] + roa_prefixes_count[c] + rov_prefixes_count[c] + neither_prefixes_count[c]))
+    roa_rov_weights.append(neither_prefixes_count[c]/(both_prefixes_count[c] + roa_prefixes_count[c] + rov_prefixes_count[c] + neither_prefixes_count[c]))
+    random_status = random.choices(dist, weights=roa_rov_weights, k=1)[0]
+    
+    print("random status = ", random_status)
+    chosen_node = random.choice(__filter_nodes_ROA_ROV(network, None, country_code_hint, random_status))
+
+    # chosen_node = random.choice(__filter_nodes(network, None, country_code_hint))
 
     # add the host element and attributes
     host = {}

@@ -11,7 +11,7 @@ def run(args):
 
     logging.info("Starting dstat")
     dstat_subp = __start_dstat(args)
-
+    print("what is shadow args!!! ===", args)
     logging.info("Starting free loop")
     free_stop_event = threading.Event()
     free_thread = threading.Thread(target=__run_free_loop, args=(args, free_stop_event))
