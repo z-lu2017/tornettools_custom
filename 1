@@ -337,14 +337,31 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
         if len(d) < 1:
             continue
 
+        group_vanilla = []
+        group_discount = []
+        group_matching = []
+        
         line = plot_func(pyplot, d,
                          yscale=yscale,
                          label=db['label'],
                          color=db['color'] or next(color_cycle),
                          linestyle=next(linestyle_cycle))
 
-        lines.append(line)
-        labels.append(db['label'])
+        if "vanilla" in db['label']:
+            group_vanilla.append(list(line))
+        if "discount" in db['label']:
+            group_discount.append(list(line))
+        if "matching" in db['label']:
+            group_matching.append(line)
+
+    print("what is group_discount = ", group_discount)
+    max_row_len=max([len(ll) for ll in group_discount])
+
+    cm=np.nanmean([[el for el in row ] + [np.NaN] * max(0, max_row_len-len(row))  for row in group_discount], axis=0)
+    lines.append(cm)
+    labels.append("aggregated_discount")
+        #lines.append(line)
+        #labels.append(db['label'])
 
     if xscale is not None:
         pyplot.xscale(xscale)
@@ -355,12 +372,9 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
         if ylabel is not None:
             ylabel += __get_scale_suffix(yscale)
     if xlabel is not None:
-        pyplot.xlabel(xlabel, fontsize=16)
+        pyplot.xlabel(xlabel)
     if ylabel is not None:
-        pyplot.ylabel(ylabel, fontsize=16)
-    
-    xlabel = None
-    pyplot.xlabel(xlabel, fontsize=20)
+        pyplot.ylabel(ylabel)
 
     m = 0.025
     pyplot.margins(m)
@@ -406,9 +420,9 @@ def __plot_timeseries_figure(args, dbs, filename, xtime=False, ytime=False, xlab
         labels.append(db['label'])
 
     if xlabel is not None:
-        pyplot.xlabel(xlabel, fontsize=16)
+        pyplot.xlabel(xlabel)
     if ylabel is not None:
-        pyplot.ylabel(ylabel, fontsize=16)
+        pyplot.ylabel(ylabel)
 
     if xtime:
         f.axes[0].xaxis.set_major_formatter(FuncFormatter(__time_format_func))
@@ -422,12 +436,12 @@ def __plot_timeseries_figure(args, dbs, filename, xtime=False, ytime=False, xlab
     __plot_finish(args, lines, labels, filename)
 
 def __plot_finish(args, lines, labels, filename):
-    pyplot.tick_params(axis='both', which='major', labelsize=12)
-    pyplot.tick_params(axis='both', which='minor', labelsize=12)
+    pyplot.tick_params(axis='both', which='major', labelsize=8)
+    pyplot.tick_params(axis='both', which='minor', labelsize=5)
     pyplot.grid(True, axis='both', which='minor', color='0.1', linestyle=':', linewidth='0.5')
     pyplot.grid(True, axis='both', which='major', color='0.1', linestyle=':', linewidth='1.0')
 
-    pyplot.legend(lines, labels, loc='best', fontsize=18)
+    pyplot.legend(lines, labels, loc='best')
     pyplot.tight_layout(pad=0.3)
     pyplot.savefig(f"{args.prefix}/{filename}.{'png' if args.plot_pngs else 'pdf'}")
     args.pdfpages.savefig()
