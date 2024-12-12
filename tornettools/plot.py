@@ -75,12 +75,13 @@ def __plot_tornet(args):
         logging.info(f"Loading {circuittype} tornet transfer time data")
         tornet_dbs = __load_tornet_datasets(args, __pattern_for_basename(circuittype, 'time_to_last_byte_recv'))
         logging.info("Plotting transfer times")
-        # __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "51200")
+        #__plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "10240")
+        __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "102400")
+        __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "204800")
+        __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "512000")
         __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "1048576")
+        __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "2097152")
         __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "5242880")
-        __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "10485760")
-        __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "52428800")
-        __plot_transfer_time(args, circuittype, torperf_dbs, tornet_dbs, "104857600")
 
         logging.info(f"Loading {circuittype} tornet goodput data")
         tornet_dbs = __load_tornet_datasets(args, __pattern_for_basename(circuittype, 'perfclient_goodput'))
@@ -327,6 +328,8 @@ def __plot_cdf_figure(args, dbs, filename, xscale=None, yscale=None, xlabel=None
     lines, labels = [], []
 
     for db in dbs:
+        if db['label'] == "Public Tor":
+            continue
         if 'data' not in db or len(db['data']) < 1:
             continue
         elif len(db['data']) == 1:
