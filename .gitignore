@@ -9,3 +9,7 @@ __pycache__
 /tgen
 /tmodel-ccs2018.github.io
 /tor
+/matching
+/discount
+/vanilla
+/tornet-*
